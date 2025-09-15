@@ -1,8 +1,8 @@
 import "./globals.css";
 import type { Metadata } from "next";
 
-// ✅ सही import (क्योंकि AuthForm src/components/ui/ में है)
-import AuthForm from "@/components/ui/AuthForm";
+// ✅ RELATIVE IMPORT (layout.tsx से ../components/ui/AuthForm.tsx तक)
+import AuthForm from "../components/ui/AuthForm";
 
 export const metadata: Metadata = {
   title: "Vansh Yatra",
@@ -25,7 +25,7 @@ export default function RootLayout({
         </header>
 
         {/* Main content */}
-        <main className="flex flex-col items-center justify-center min-h-screen px-4 pt-24 pb-24">
+        <main className="min-h-screen px-4 pt-24 pb-24 flex flex-col items-center">
           {children}
         </main>
 
