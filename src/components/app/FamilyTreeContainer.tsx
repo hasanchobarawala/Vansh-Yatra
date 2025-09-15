@@ -1,167 +1,137 @@
-'use client';
+"use client";
 
-import type { FamilyMember } from '@/lib/types';
-import { useState, useMemo } from 'react';
-import { FamilyTree } from './FamilyTree';
-import { AddMemberSheet } from './AddMemberSheet';
-import { StoryDialog } from './StoryDialog';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { useState } from "react";
 
-interface FamilyTreeContainerProps {
-  initialData: FamilyMember[];
+interface FamilyMember {
+  id: number;
+  name: string;
+  relation: string;
+  birthDate?: string;
+  deathDate?: string;
+  photo?: string;
+  story?: string;
 }
 
-type Connection = {
-  memberId: string;
-  type: 'parent' | 'spouse';
-}
+export default function FamilyTreeContainer() {
+  const [members, setMembers] = useState<FamilyMember[]>([]);
+  const [name, setName] = useState("");
+  const [relation, setRelation] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [deathDate, setDeathDate] = useState("");
+  const [story, setStory] = useState("");
+  const [photo, setPhoto] = useState("");
 
-export function FamilyTreeContainer({ initialData }: FamilyTreeContainerProps) {
-  const [members, setMembers] = useState<FamilyMember[]>(initialData);
-  const [isSheetOpen, setSheetOpen] = useState(false);
-  const [editingMember, setEditingMember] = useState<FamilyMember | null>(null);
-  const [connection, setConnection] = useState<Connection | null>(null);
-  const [storyMember, setStoryMember] = useState<FamilyMember | null>(null);
+  const addMember = () => {
+    if (!name || !relation) return;
 
-  const memberMap = useMemo(() => {
-    return new Map(members.map((m) => [m.id, m]));
-  }, [members]);
+    const newMember: FamilyMember = {
+      id: Date.now(),
+      name,
+      relation,
+      birthDate,
+      deathDate,
+      story,
+      photo,
+    };
 
-  const handleAddNew = () => {
-    setEditingMember(null);
-    setConnection(null);
-    setSheetOpen(true);
-  };
-  
-  const handleAddRelative = (memberId: string, type: 'parent' | 'spouse') => {
-    setEditingMember(null);
-    setConnection({ memberId, type });
-    setSheetOpen(true);
-  }
+    setMembers((m) => [...m, newMember]);
 
-  const handleEdit = (member: FamilyMember) => {
-    setEditingMember(member);
-    setConnection(null);
-    setSheetOpen(true);
-  };
-
-  const handleDelete = (memberId: string) => {
-    if (!window.confirm('Are you sure you want to delete this member and their entire branch?')) {
-      return;
-    }
-
-    setMembers(currentMembers => {
-      const membersToDelete = new Set<string>();
-      const queue: string[] = [memberId];
-      const visited = new Set<string>();
-      
-      const memberMap = new Map(currentMembers.map(m => [m.id, m]));
-      const member = memberMap.get(memberId);
-      if(member?.spouseId) {
-        queue.push(member.spouseId);
-      }
-
-      while (queue.length > 0) {
-        const currentId = queue.shift()!;
-        if (visited.has(currentId)) {
-          continue;
-        }
-        visited.add(currentId);
-        membersToDelete.add(currentId);
-
-        const currentMember = memberMap.get(currentId);
-        if(!currentMember) continue;
-        
-        // Add spouse to the deletion set
-        if (currentMember.spouseId && !visited.has(currentMember.spouseId)) {
-           queue.push(currentMember.spouseId);
-        }
-
-        // Add children to the queue
-        const children = currentMembers.filter(m => m.parents.includes(currentId));
-        for (const child of children) {
-          if (!visited.has(child.id)) {
-            queue.push(child.id);
-          }
-        }
-      }
-
-      // Filter out the deleted members and clean up any dangling references
-      return currentMembers
-        .filter(m => !membersToDelete.has(m.id))
-        .map(m => {
-          const newParents = m.parents.filter(pId => !membersToDelete.has(pId));
-          const newSpouseId = (m.spouseId && membersToDelete.has(m.spouseId)) ? undefined : m.spouseId;
-          
-          if(newParents.length !== m.parents.length || newSpouseId !== m.spouseId) {
-            return { ...m, parents: newParents, spouseId: newSpouseId };
-          }
-          return m;
-        });
-    });
-  };
-
-  const handleSave = (memberData: Omit<FamilyMember, 'imageHint'>) => {
-    if (editingMember) {
-      // Update existing member
-      setMembers(prev => prev.map(m => m.id === editingMember.id ? { ...m, ...memberData, imageHint: m.imageHint } : m));
-    } else {
-      // Add new member
-      const newMember: FamilyMember = {
-        ...memberData,
-        imageUrl: memberData.imageUrl || `https://picsum.photos/seed/${memberData.id}/400/400`,
-        imageHint: 'person portrait',
-        parents: connection?.type === 'parent' ? [connection.memberId] : [],
-      };
-      
-      let newMembersList = [...members, newMember];
-
-      if (connection?.type === 'spouse') {
-        const spouseToUpdate = newMembersList.find(m => m.id === connection.memberId);
-        if (spouseToUpdate) {
-            newMembersList = newMembersList.map(m => {
-                if(m.id === connection.memberId) return {...m, spouseId: newMember.id};
-                if(m.id === newMember.id) return {...m, spouseId: connection.memberId, parents: spouseToUpdate.parents};
-                return m;
-            });
-        }
-      }
-
-      setMembers(newMembersList);
-    }
-    setSheetOpen(false);
-    setEditingMember(null);
-    setConnection(null);
-  };
-  
-  const handleViewStory = (member: FamilyMember) => {
-    setStoryMember(member);
+    setName("");
+    setRelation("");
+    setBirthDate("");
+    setDeathDate("");
+    setStory("");
+    setPhoto("");
   };
 
   return (
-    <div className="space-y-6">
-      <FamilyTree
-        members={members}
-        memberMap={memberMap}
-        onAddRelative={handleAddRelative}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onViewStory={handleViewStory}
-        onAddNew={handleAddNew}
-      />
-      <AddMemberSheet
-        isOpen={isSheetOpen}
-        onOpenChange={setSheetOpen}
-        onSave={handleSave}
-        member={editingMember}
-        members={members}
-        connection={connection}
-      />
-      <StoryDialog
-        member={storyMember}
-        onOpenChange={() => setStoryMember(null)}
-      />
+    <div className="p-4 text-white">
+      {/* Form */}
+      <div className="mx-auto mb-6 grid max-w-2xl grid-cols-1 gap-3">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Name"
+          className="w-full rounded bg-gray-800 p-2 outline-none"
+        />
+        <input
+          value={relation}
+          onChange={(e) => setRelation(e.target.value)}
+          placeholder="Relation (e.g., Father, Mother, Brother)"
+          className="w-full rounded bg-gray-800 p-2 outline-none"
+        />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <input
+            type="date"
+            value={birthDate}
+            onChange={(e) => setBirthDate(e.target.value)}
+            placeholder="Date of Birth"
+            className="w-full rounded bg-gray-800 p-2 outline-none"
+          />
+          <input
+            type="date"
+            value={deathDate}
+            onChange={(e) => setDeathDate(e.target.value)}
+            placeholder="Date of Death (optional)"
+            className="w-full rounded bg-gray-800 p-2 outline-none"
+          />
+        </div>
+        <input
+          value={photo}
+          onChange={(e) => setPhoto(e.target.value)}
+          placeholder="Photo URL (optional)"
+          className="w-full rounded bg-gray-800 p-2 outline-none"
+        />
+        <textarea
+          value={story}
+          onChange={(e) => setStory(e.target.value)}
+          placeholder="Stories / Memories"
+          className="min-h-[90px] w-full rounded bg-gray-800 p-2 outline-none"
+        />
+        <button
+          onClick={addMember}
+          className="mt-1 rounded bg-yellow-500 px-4 py-2 font-semibold text-black hover:bg-yellow-400"
+        >
+          Add Member
+        </button>
+      </div>
+
+      {/* List */}
+      <div className="mx-auto grid max-w-4xl gap-4">
+        {members.length === 0 ? (
+          <p className="text-center text-gray-400">No members added yet.</p>
+        ) : (
+          members.map((m) => (
+            <div
+              key={m.id}
+              className="rounded border border-gray-800 bg-gray-900 p-4"
+            >
+              <div className="flex items-start gap-4">
+                {m.photo ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={m.photo}
+                    alt={m.name}
+                    className="h-20 w-20 rounded object-cover"
+                  />
+                ) : (
+                  <div className="flex h-20 w-20 items-center justify-center rounded bg-gray-800 text-sm text-gray-400">
+                    No Photo
+                  </div>
+                )}
+
+                <div>
+                  <h3 className="text-lg font-bold text-yellow-400">{m.name}</h3>
+                  <p className="text-gray-300">Relation: {m.relation}</p>
+                  {m.birthDate && <p className="text-gray-400">Born: {m.birthDate}</p>}
+                  {m.deathDate && <p className="text-gray-400">Died: {m.deathDate}</p>}
+                  {m.story && <p className="mt-2 text-gray-200">{m.story}</p>}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }
