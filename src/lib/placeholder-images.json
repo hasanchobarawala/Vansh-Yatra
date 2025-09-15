@@ -1,0 +1,53 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "1",
+      "description": "Rajesh Kumar, the patriarch",
+      "imageUrl": "https://picsum.photos/seed/rk1/400/400",
+      "imageHint": "old man"
+    },
+    {
+      "id": "2",
+      "description": "Priya Kumar, the matriarch",
+      "imageUrl": "https://picsum.photos/seed/pk2/400/400",
+      "imageHint": "old woman"
+    },
+    {
+      "id": "3",
+      "description": "Sunita Sharma",
+      "imageUrl": "https://picsum.photos/seed/ss3/400/400",
+      "imageHint": "middle-aged woman"
+    },
+    {
+      "id": "4",
+      "description": "Anil Kumar",
+      "imageUrl": "https://picsum.photos/seed/ak4/400/400",
+      "imageHint": "middle-aged man"
+    },
+    {
+      "id": "5",
+      "description": "Rohan Kumar",
+      "imageUrl": "https://picsum.photos/seed/rk5/400/400",
+      "imageHint": "young man"
+    },
+    {
+      "id": "6",
+      "description": "Meera Kumar",
+      "imageUrl": "https://picsum.photos/seed/mk6/400/400",
+      "imageHint": "young woman"
+    },
+    {
+      "id": "7",
+      "description": "Vikram Singh",
+      "imageUrl": "https://picsum.photos/seed/vs7/400/400",
+      "imageHint": "man portrait"
+    },
+    {
+      "id": "8",
+      "description": "Aarav Kumar",
+      "imageUrl": "https://picsum.photos/seed/ak8/400/400",
+      "imageHint": "child boy"
+    }
+  ]
+}
