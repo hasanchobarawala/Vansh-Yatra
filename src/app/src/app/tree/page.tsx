@@ -1,5 +1,5 @@
 "use client";
-
+import StartButton from "@/components/StartButton";
 import { useEffect, useState } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
