@@ -1,6 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import AuthForm from "@/components/ui/AuthForm";
+import AuthForm from "@/components/AuthForm";
 
 export const metadata: Metadata = {
   title: "Vansh Yatra",
