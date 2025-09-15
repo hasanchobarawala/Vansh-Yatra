@@ -1,41 +1,32 @@
 "use client";
-import StartButton from "@/components/StartButton";
-import { useEffect, useState } from "react";
-import { onAuthStateChanged, User } from "firebase/auth";
-import { auth } from "@/lib/firebase";
 
-// 👇 agar yeh component aapke repo me hai (screenshot me dikh raha tha)
-import FamilyTreeContainer from "@/components/app/FamilyTreeContainer";
+import FamilyTreeContainer from "@/components/FamilyTreeContainer";
+import { useState } from "react";
 
 export default function TreePage() {
-  const [user, setUser] = useState<User | null>(null);
-  const [checking, setChecking] = useState(true);
+  const [showTree, setShowTree] = useState(false);
 
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      setChecking(false);
-    });
-    return () => unsub();
-  }, []);
-
-  if (checking) {
-    return <div className="p-8 text-center">Loading…</div>;
-  }
-
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center flex-col gap-3">
-        <h2 className="text-2xl">Please login first</h2>
-        <a className="underline" href="/">Go back to Home</a>
-      </div>
-    );
-  }
-
-  // ✅ logged-in: show your tree UI
   return (
-    <main className="min-h-screen">
-      <FamilyTreeContainer />
+    <main className="min-h-screen bg-black text-white flex flex-col items-center px-6 py-12">
+      {/* Title */}
+      <h1 className="text-4xl font-bold text-yellow-500 mb-4">My Family Tree</h1>
+      <p className="text-gray-300 mb-8">
+        यहां आप अपने परिवार की जानकारी जोड़कर डिजिटल फैमिली ट्री बना सकते हैं।
+      </p>
+
+      {/* Button → Show Tree */}
+      {!showTree ? (
+        <button
+          onClick={() => setShowTree(true)}
+          className="px-6 py-3 rounded-lg bg-yellow-400 text-black font-semibold hover:bg-yellow-500 transition"
+        >
+          Add Members & Build Tree
+        </button>
+      ) : (
+        <div className="w-full max-w-5xl bg-neutral-900 p-6 rounded-lg shadow">
+          <FamilyTreeContainer />
+        </div>
+      )}
     </main>
   );
 }
