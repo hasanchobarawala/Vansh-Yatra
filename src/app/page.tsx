@@ -20,13 +20,14 @@ export default function HomePage() {
             यह ऐप परिवार को जोड़ने, विरासत को संजोने और आने वाली पीढ़ियों को अपनी जड़ों से जोड़ने का माध्यम है।
           </p>
 
-         <div className="mt-4">
+      <div className="mt-4">
   <img
     src="/family-tree.png"
     alt="Family Tree"
-    className="w-full max-w-[44rem] max-h-[60vh] object-contain rounded-lg shadow-lg"
+    className="max-w-[44rem] max-h-[60vh] object-contain rounded-lg shadow-lg"
   />
 </div>
+
 
 
         </div>
