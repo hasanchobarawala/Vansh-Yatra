@@ -1,68 +1,41 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
-import { onAuthStateChanged, User } from "firebase/auth";
-import { auth } from "@/lib/firebase";
-
 import AuthForm from "@/components/ui/AuthForm";
-import AuthStatus from "@/components/AuthStatus";
+import { useRouter } from "next/navigation";
 
-export default function HomePage() {
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, setUser);
-    return () => unsub();
-  }, []);
+export default function Home() {
+  const router = useRouter();
 
   return (
-    <main className="min-h-screen bg-black text-white">
-      {/* top bar */}
-      <div className="w-full max-w-6xl mx-auto px-4 flex items-center justify-end py-4">
-        <AuthStatus />
+    <main className="min-h-screen flex flex-col items-center justify-center bg-black text-center px-4">
+      {/* Hero Section */}
+      <h1 className="text-5xl font-bold text-yellow-500 mb-4">Vansh Yatra</h1>
+      <p className="text-xl text-white mb-8">जानो अपनी जड़ें, बनाओ अपना वंश।</p>
+      
+      <p className="max-w-2xl text-white mb-8">
+        वंश यात्रा एक अनोखा ऐप है जो आपके कुल व वंश की जानकारी को डिजिटल रूप में सुरक्षित करता है। 
+        इस ऐप के माध्यम से आप अपने पूर्वजों की पीढ़ी-दर-पीढ़ी जानकारी एक ही स्थान पर जोड़ सकते हैं। 
+        परिवार वृक्ष (फैमिली ट्री) के रूप में सभी रिश्तों को सहज रूप से देखा जा सकता है। 
+        यह ऐप परिवार को जोड़ने, विरासत को संजोने और आने वाली पीढ़ियों को अपनी जड़ों से जोड़ने का माध्यम है।
+      </p>
+
+      {/* Auth Form */}
+      <div className="mb-8">
+        <AuthForm />
       </div>
 
-      <div className="w-full max-w-6xl mx-auto px-4 grid md:grid-cols-2 gap-10 items-center">
-        {/* LEFT: Hero text */}
-        <section className="py-6">
-          <h1 className="text-5xl md:text-6xl font-extrabold text-yellow-400 mb-4">
-            Vansh Yatra
-          </h1>
-          <p className="text-2xl text-white/90 mb-8">जानो अपनी जड़ें, बनाओ अपना वंश।</p>
+      {/* Start Tree Button */}
+      <button
+        onClick={() => router.push("/tree")}
+        className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-2 px-6 rounded"
+      >
+        Start Building Your Tree
+      </button>
 
-          <p className="max-w-2xl text-white/80 leading-8 mb-10">
-            वंश यात्रा एक अनोखा ऐप है जो आपके कुल व वंश की जानकारी को
-            डिजिटल रूप में सुरक्षित करता है। इस ऐप के माध्यम से आप अपने पूर्वजों की
-            पीढ़ी-दर-पीढ़ी जानकारी एक ही स्थान पर जोड़ सकते हैं। परिवार वृक्ष के
-            रूप में सभी रिश्तों को सहज रूप से देखना बहुत आसान है।
-          </p>
-
-          <Link
-            href="/tree"
-            className="inline-block rounded bg-yellow-500 hover:bg-yellow-400 text-black font-semibold px-6 py-3"
-          >
-            Start Building Your Tree
-          </Link>
-
-          <p className="mt-6 text-white/60">
-            Your family tree is empty. Click the button to begin your Family Journey.
-          </p>
-
-          <p className="mt-16 text-center text-white/60 text-sm">
-            App Developed by Hasan Chobarawala · +91-9926652153
-          </p>
-        </section>
-
-        {/* RIGHT: Login card (only if NOT logged in) */}
-        {!user && (
-          <section className="flex justify-center md:justify-end">
-            <div className="w-full max-w-md bg-white/5 backdrop-blur rounded-xl p-6 border border-white/10">
-              <AuthForm />
-            </div>
-          </section>
-        )}
-      </div>
+      {/* Info */}
+      <p className="text-gray-400 mt-4">
+        Your family tree is empty. Click the button to begin your Family Journey.
+      </p>
     </main>
   );
 }
