@@ -21,13 +21,14 @@ export default function HomePage() {
           </p>
 
           {/* Image: left aligned, width ~ first line of description */}
-          <div className="mt-4">
-            <img
-              src="/family-tree.png"
-              alt="Family Tree"
-              className="w-full max-w-[28rem] object-contain rounded-lg shadow-lg"
-            />
-          </div>
+         <div className="mt-4">
+  <img
+    src="/family-tree.png"
+    alt="Family Tree"
+    className="w-full max-w-[34rem] max-h-[40vh] object-contain rounded-lg shadow-lg"
+  />
+</div>
+
         </div>
 
         {/* Right: Login (top-right) */}
