@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import AddMemberSheet from "@/components/app/AddMemberSheet";
 import { auth, db } from "@/lib/firebase";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import { onValue, ref, remove } from "firebase/database";
 
 type Member = {
@@ -18,14 +18,16 @@ type Member = {
 };
 
 export default function FamilyTreeContainer() {
+  const [user, setUser] = useState<User | null>(null);
   const [uid, setUid] = useState<string>("public");
   const [members, setMembers] = useState<Member[]>([]);
   const [showAdd, setShowAdd] = useState(false);
 
-  // Listen to auth & subscribe to members
+  // Listen to auth & subscribe to members of that user
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      const currentUid = user?.uid ?? "public";
+    const unsubscribeAuth = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      const currentUid = u?.uid ?? "public";
       setUid(currentUid);
 
       const treeRef = ref(db, `trees/${currentUid}/members`);
@@ -49,16 +51,51 @@ export default function FamilyTreeContainer() {
     await remove(ref(db, `trees/${uid}/members/${id}`));
   };
 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      // user state listener will clear list automatically
+    } catch (e) {
+      alert("Logout failed, try again.");
+    }
+  };
+
   return (
     <div className="mx-auto max-w-4xl px-4">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-yellow-400">आपका Family Tree</h1>
-        <button
-          onClick={() => setShowAdd(true)}
-          className="rounded bg-yellow-500 px-4 py-2 font-semibold text-black hover:bg-yellow-400"
-        >
-          Add Member
-        </button>
+      {/* Top bar with Username + Logout (only when logged in) */}
+      <div className="mb-6 flex items-center justify-between border-b border-gray-800 pb-4">
+        <div>
+          <h1 className="text-3xl font-bold text-yellow-400">आपका Family Tree</h1>
+          <p className="text-sm text-gray-300 mt-1">
+            {user ? (
+              <>
+                Logged in as{" "}
+                <span className="font-semibold text-yellow-400">
+                  {user.email ?? "User"}
+                </span>
+              </>
+            ) : (
+              "Not logged in"
+            )}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {user && (
+            <button
+              onClick={handleLogout}
+              className="rounded border border-gray-600 bg-gray-800 px-4 py-2 text-sm text-white hover:bg-gray-700"
+            >
+              Logout
+            </button>
+          )}
+          <button
+            onClick={() => setShowAdd(true)}
+            className="rounded bg-yellow-500 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-400"
+          >
+            Add Member
+          </button>
+        </div>
       </div>
 
       {/* Members list */}
@@ -105,7 +142,7 @@ export default function FamilyTreeContainer() {
         )}
       </div>
 
-      {/* Modal for adding member */}
+      {/* Add Member modal */}
       {showAdd ? (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4">
           <div className="w-full max-w-xl rounded-lg border border-gray-700 bg-gray-900 p-5">
@@ -118,6 +155,7 @@ export default function FamilyTreeContainer() {
                 Close
               </button>
             </div>
+            {/* NOTE: AddMemberSheet must itself write to Realtime DB */}
             <AddMemberSheet onClose={() => setShowAdd(false)} />
           </div>
         </div>
