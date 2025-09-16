@@ -3,35 +3,44 @@
 import { useEffect, useState } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-
-import AuthStatus from "@/components/AuthStatus";
-import AuthForm from "@/components/ui/AuthForm";
 import FamilyTreeContainer from "@/components/app/FamilyTreeContainer";
+import AuthForm from "@/components/ui/AuthForm";
 
 export default function TreePage() {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, setUser);
+    const unsub = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      setLoading(false);
+    });
     return () => unsub();
   }, []);
 
-  return (
-    <main className="min-h-screen bg-black text-white">
-      {/* top bar */}
-      <div className="w-full max-w-6xl mx-auto px-4 flex items-center justify-end py-4">
-        <AuthStatus />
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center text-neutral-300">
+        Loading…
       </div>
+    );
+  }
 
-      <div className="w-full max-w-5xl mx-auto px-4 pb-20">
-        {!user ? (
-          <div className="max-w-md mx-auto bg-white/5 backdrop-blur rounded-xl p-6 border border-white/10">
-            <AuthForm />
-          </div>
-        ) : (
-          <FamilyTreeContainer />
-        )}
+  // Not logged in → show login/signup form here itself
+  if (!user) {
+    return (
+      <div className="max-w-3xl mx-auto py-16 px-4">
+        <h1 className="text-3xl md:text-4xl font-extrabold text-yellow-400 mb-4">
+          Please log in to build your Family Tree
+        </h1>
+        <p className="text-neutral-300 mb-8">
+          लॉग-इन करें और अपने family members को जोड़ना शुरू करें।
+        </p>
+        <AuthForm />
       </div>
-    </main>
-  );
+    );
+  }
+
+  // Logged in → show the realtime tree UI
+  return <FamilyTreeContainer />;
 }
