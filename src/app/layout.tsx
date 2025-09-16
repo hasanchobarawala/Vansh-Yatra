@@ -1,10 +1,11 @@
 // src/app/layout.tsx
 import "./globals.css";
 import type { Metadata } from "next";
+import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
   title: "Vansh Yatra",
-  description: "Visually trace your family lineage and preserve your stories.",
+  description: "Visually trace your family lineage and preserve stories.",
 };
 
 export default function RootLayout({
@@ -13,12 +14,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className="min-h-screen bg-black text-white">
+    <html lang="en">
+      <body className="bg-black text-white font-body antialiased">
+        {/* PAGE CONTENT */}
         {children}
 
-        {/* Global footer - appears only once on every page */}
-        <footer className="text-center text-gray-400 text-sm py-6">
+        {/* Global toast */}
+        <Toaster />
+
+        {/* SINGLE GLOBAL FOOTER (gold + bold) */}
+        <footer className="text-center py-6 text-yellow-500 font-bold">
           App Developed by Hasan Chobarawala · +91-9926652153
         </footer>
       </body>
