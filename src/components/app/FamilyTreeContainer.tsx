@@ -1,279 +1,218 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { onAuthStateChanged, User, signOut } from "firebase/auth";
-import { ref, onValue, push, set, remove } from "firebase/database";
+import { useEffect, useState } from "react";
+import { onAuthStateChanged } from "firebase/auth";
+import { ref, onValue, push, remove } from "firebase/database";
 import { auth, db } from "@/lib/firebase";
 
 type Member = {
-  id?: string;
+  id?: string;            // Realtime DB key
   name: string;
   relation: string;
-  dob?: string;
-  dod?: string;
+  dob?: string;           // Date of Birth (dd-mm-yyyy)
+  dod?: string;           // Date of Death (optional)
   photoUrl?: string;
-  stories?: string;
-  createdAt?: number;
+  story?: string;
 };
 
 export default function FamilyTreeContainer() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loadingUser, setLoadingUser] = useState(true);
+  // who is logged in
+  const [uid, setUid] = useState<string | null>(null);
+
+  // live list
+  const [members, setMembers] = useState<Member[]>([]);
 
   // form state
-  const [name, setName] = useState("");
-  const [relation, setRelation] = useState("");
-  const [dob, setDob] = useState("");
-  const [dod, setDod] = useState("");
-  const [photoUrl, setPhotoUrl] = useState("");
-  const [stories, setStories] = useState("");
+  const [form, setForm] = useState<Member>({
+    name: "",
+    relation: "",
+    dob: "",
+    dod: "",
+    photoUrl: "",
+    story: "",
+  });
 
-  // members
-  const [members, setMembers] = useState<Member[]>([]);
-  const [saving, setSaving] = useState(false);
-
-  // --- Listen auth ---
+  // watch auth + subscribe to user's members
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      setLoadingUser(false);
-    });
-    return () => unsub();
-  }, []);
+    const unsub = onAuthStateChanged(auth, (user) => {
+      const u = user?.uid ?? null;
+      setUid(u);
 
-  // --- DB path: users/{uid}/members ---
-  const membersRef = useMemo(() => {
-    if (!user) return null;
-    return ref(db, `users/${user.uid}/members`);
-  }, [user]);
-
-  // --- Realtime listener ---
-  useEffect(() => {
-    if (!membersRef) {
-      setMembers([]);
-      return;
-    }
-    const unsub = onValue(membersRef, (snap) => {
-      const val = snap.val() as Record<string, Member> | null;
-      if (!val) {
+      if (!u) {
         setMembers([]);
         return;
       }
-      const list: Member[] = Object.entries(val).map(([id, v]) => ({
-        id,
-        ...v,
-      }));
-      // newest first
-      list.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
-      setMembers(list);
+
+      const membersRef = ref(db, `users/${u}/members`);
+      onValue(membersRef, (snap) => {
+        const val = snap.val();
+        const list: Member[] = val
+          ? Object.entries(val).map(([key, value]) => ({
+              id: key,
+              ...(value as Member),
+            }))
+          : [];
+        setMembers(list);
+      });
     });
+
     return () => unsub();
-  }, [membersRef]);
+  }, []);
 
-  // --- Add member ---
-  const handleAdd = async () => {
-    if (!user || !membersRef) return;
-    if (!name.trim() || !relation.trim()) return;
+  // helpers
+  const onChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
 
-    setSaving(true);
-    try {
-      const keyRef = push(membersRef);
-      const payload: Member = {
-        name: name.trim(),
-        relation: relation.trim(),
-        dob: dob || undefined,
-        dod: dod || undefined,
-        photoUrl: photoUrl || undefined,
-        stories: stories || undefined,
-        createdAt: Date.now(),
-      };
-      await set(keyRef, payload);
+  const addMember = async () => {
+    if (!uid) return;
+    if (!form.name.trim() || !form.relation.trim()) return;
 
-      // clear form
-      setName("");
-      setRelation("");
-      setDob("");
-      setDod("");
-      setPhotoUrl("");
-      setStories("");
-    } finally {
-      setSaving(false);
-    }
+    const data: Member = {
+      name: form.name.trim(),
+      relation: form.relation.trim(),
+      dob: form.dob?.trim() || "",
+      dod: form.dod?.trim() || "",
+      photoUrl: form.photoUrl?.trim() || "",
+      story: form.story?.trim() || "",
+    };
+
+    await push(ref(db, `users/${uid}/members`), data);
+
+    // clear form
+    setForm({ name: "", relation: "", dob: "", dod: "", photoUrl: "", story: "" });
   };
 
-  // --- Delete member ---
-  const handleDelete = async (id?: string) => {
-    if (!user || !id) return;
-    await remove(ref(db, `users/${user.uid}/members/${id}`));
+  const deleteMember = async (id?: string) => {
+    if (!uid || !id) return;
+    const ok = confirm("Delete this member?");
+    if (!ok) return;
+    await remove(ref(db, `users/${uid}/members/${id}`));
   };
-
-  if (loadingUser) {
-    return (
-      <div className="max-w-4xl mx-auto py-16 text-center text-neutral-300">
-        Loading…
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="max-w-3xl mx-auto py-16 text-center">
-        <h2 className="text-3xl font-semibold text-yellow-400 mb-4">
-          Please log in to manage your Family Tree
-        </h2>
-        <p className="text-neutral-300">
-          लॉग-इन करने के बाद आप अपने परिवार के members जोड़ और देख सकेंगे।
-        </p>
-      </div>
-    );
-  }
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
-      {/* Header with user + logout */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-4xl font-extrabold text-yellow-400">
-            आपका Family Tree
-          </h1>
-          <p className="text-neutral-300">
-            {user.email ? user.email : "Logged in"} — स्वागत है!
-          </p>
-        </div>
-        <button
-          onClick={() => signOut(auth)}
-          className="px-4 py-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-600"
-        >
-          Logout
-        </button>
-      </div>
+    <div className="mx-auto max-w-4xl px-4 py-10">
+      <h1 className="text-4xl font-bold text-yellow-500 text-center mb-1">
+        आपका Family Tree
+      </h1>
+      <p className="text-center text-gray-300 mb-10">
+        यहाँ आप अपने परिवार के सदस्यों को जोड़ और देख सकते हैं।
+      </p>
 
-      {/* Form */}
-      <div className="space-y-4 mb-8">
+      {/* FORM */}
+      <div className="space-y-4">
         <input
-          className="w-full rounded-md bg-neutral-900 border border-neutral-700 px-4 py-3 text-neutral-100 placeholder-neutral-400"
+          name="name"
+          value={form.name}
+          onChange={onChange}
           placeholder="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
+          className="w-full rounded-md border border-gray-700 bg-gray-800 px-4 py-3 text-white outline-none"
         />
         <input
-          className="w-full rounded-md bg-neutral-900 border border-neutral-700 px-4 py-3 text-neutral-100 placeholder-neutral-400"
+          name="relation"
+          value={form.relation}
+          onChange={onChange}
           placeholder="Relation (e.g., Father, Mother, Brother)"
-          value={relation}
-          onChange={(e) => setRelation(e.target.value)}
+          className="w-full rounded-md border border-gray-700 bg-gray-800 px-4 py-3 text-white outline-none"
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm text-neutral-300 mb-1">
-              Date of Birth
-            </label>
+            <label className="block text-sm mb-1 text-gray-300">Date of Birth</label>
             <input
-              type="date"
-              className="w-full rounded-md bg-neutral-900 border border-neutral-700 px-4 py-3 text-neutral-100"
-              value={dob}
-              onChange={(e) => setDob(e.target.value)}
+              name="dob"
+              value={form.dob}
+              onChange={onChange}
+              placeholder="dd-mm-yyyy"
+              className="w-full rounded-md border border-gray-700 bg-gray-800 px-4 py-3 text-white outline-none"
             />
           </div>
           <div>
-            <label className="block text-sm text-neutral-300 mb-1">
+            <label className="block text-sm mb-1 text-gray-300">
               Date of Death (Optional)
             </label>
             <input
-              type="date"
-              className="w-full rounded-md bg-neutral-900 border border-neutral-700 px-4 py-3 text-neutral-100"
-              value={dod}
-              onChange={(e) => setDod(e.target.value)}
+              name="dod"
+              value={form.dod}
+              onChange={onChange}
+              placeholder="dd-mm-yyyy"
+              className="w-full rounded-md border border-gray-700 bg-gray-800 px-4 py-3 text-white outline-none"
             />
           </div>
         </div>
 
         <input
-          className="w-full rounded-md bg-neutral-900 border border-neutral-700 px-4 py-3 text-neutral-100 placeholder-neutral-400"
+          name="photoUrl"
+          value={form.photoUrl}
+          onChange={onChange}
           placeholder="Photo URL (optional)"
-          value={photoUrl}
-          onChange={(e) => setPhotoUrl(e.target.value)}
+          className="w-full rounded-md border border-gray-700 bg-gray-800 px-4 py-3 text-white outline-none"
         />
 
-        <div>
-          <label className="block text-sm text-neutral-300 mb-1">
-            Stories / Memories
-          </label>
-          <textarea
-            rows={4}
-            className="w-full rounded-md bg-neutral-900 border border-neutral-700 px-4 py-3 text-neutral-100 placeholder-neutral-400"
-            placeholder="Write a short memory or story…"
-            value={stories}
-            onChange={(e) => setStories(e.target.value)}
-          />
-        </div>
+        <textarea
+          name="story"
+          value={form.story}
+          onChange={onChange}
+          placeholder="Write a short memory or story..."
+          rows={4}
+          className="w-full rounded-md border border-gray-700 bg-gray-800 px-4 py-3 text-white outline-none"
+        />
 
         <button
-          disabled={saving}
-          onClick={handleAdd}
-          className="w-full md:w-auto px-6 py-3 rounded-md bg-yellow-500 hover:bg-yellow-400 text-black font-semibold shadow disabled:opacity-60"
+          onClick={addMember}
+          disabled={!uid || !form.name.trim() || !form.relation.trim()}
+          className="rounded-md border border-yellow-700 bg-yellow-600 px-6 py-3 font-semibold text-black hover:bg-yellow-500 disabled:opacity-50"
         >
-          {saving ? "Saving…" : "Add Member"}
+          Add Member
         </button>
       </div>
 
-      {/* List */}
-      <div className="space-y-3">
+      {/* LIST */}
+      <div className="mt-10 space-y-4">
         {members.length === 0 ? (
-          <p className="text-center text-neutral-400">
-            No members added yet.
-          </p>
+          <p className="text-center text-gray-400">No members added yet.</p>
         ) : (
           members.map((m) => (
             <div
               key={m.id}
-              className="flex items-start justify-between gap-3 rounded-lg border border-neutral-700 bg-neutral-900 p-4"
+              className="rounded-md border border-gray-700 bg-gray-900 p-4"
             >
-              <div className="space-y-1">
-                <div className="text-lg font-semibold text-neutral-100">
-                  {m.name}{" "}
-                  <span className="text-neutral-400 font-normal">
-                    • {m.relation}
-                  </span>
-                </div>
-                {(m.dob || m.dod) && (
-                  <div className="text-sm text-neutral-400">
-                    {m.dob ? `DOB: ${m.dob}` : ""}{" "}
-                    {m.dob && m.dod ? "• " : ""}
-                    {m.dod ? `DOD: ${m.dod}` : ""}
-                  </div>
-                )}
-                {m.photoUrl && (
-                  <div className="text-sm">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="text-lg font-semibold text-white">{m.name}</div>
+                  <div className="text-sm text-gray-300">{m.relation}</div>
+                  {(m.dob || m.dod) && (
+                    <div className="text-sm text-gray-400 mt-1">
+                      {m.dob && <>DOB: {m.dob}</>}{" "}
+                      {m.dod && <span className="ml-2">DOD: {m.dod}</span>}
+                    </div>
+                  )}
+                  {m.story && (
+                    <p className="text-gray-300 mt-2 whitespace-pre-wrap">
+                      {m.story}
+                    </p>
+                  )}
+                  {m.photoUrl && (
                     <a
-                      className="text-yellow-400 underline"
                       href={m.photoUrl}
                       target="_blank"
+                      className="text-blue-400 underline mt-2 inline-block"
                     >
-                      View photo
+                      View Photo
                     </a>
-                  </div>
-                )}
-                {m.stories && (
-                  <p className="text-neutral-300 whitespace-pre-line">
-                    {m.stories}
-                  </p>
-                )}
+                  )}
+                </div>
+
+                <button
+                  onClick={() => deleteMember(m.id)}
+                  className="rounded-md border border-red-700 bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-500"
+                >
+                  Delete
+                </button>
               </div>
-              <button
-                onClick={() => handleDelete(m.id)}
-                className="px-3 py-1 rounded-md bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-600"
-              >
-                Delete
-              </button>
             </div>
           ))
         )}
-      </div>
-
-      {/* Single footer (gold & bold) */}
-      <div className="text-center mt-12 font-semibold text-yellow-500">
-        App Developed by Hasan Chobarawala · +91-9926652153
       </div>
     </div>
   );
