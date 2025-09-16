@@ -156,10 +156,6 @@ export default function FamilyTreeContainer() {
           </ul>
         )}
       </div>
-
-      <p className="mt-16 text-center text-white/60 text-sm">
-        App Developed by Hasan Chobarawala · +91-9926652153
-      </p>
-    </div>
+      </div>
   );
 }
