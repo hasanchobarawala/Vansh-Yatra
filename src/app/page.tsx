@@ -25,7 +25,7 @@ export default function HomePage() {
   <img
     src="/family-tree.png"
     alt="Family Tree"
-    className="w-full max-w-[40rem] max-h-[60vh] object-contain rounded-lg shadow-lg"
+    className="w-full max-w-[44rem] max-h-[60vh] object-contain rounded-lg shadow-lg"
   />
 </div>
 
