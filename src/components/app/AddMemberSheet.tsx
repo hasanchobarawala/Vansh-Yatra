@@ -1,188 +1,166 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
+import React, { useState } from "react";
+import { ref, push } from "firebase/database";
+import { db, auth } from "../../lib/firebase";
 
-import type { FamilyMember } from "@/lib/types"
+type Props = {
+  onClose: () => void;
+};
 
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetFooter,
-} from "@/components/ui/sheet"
+export default function AddMemberForm({ onClose }: Props) {
+  const [name, setName] = useState("");
+  const [relation, setRelation] = useState("");
+  const [dob, setDob] = useState(""); // yyyy-mm-dd
+  const [dod, setDod] = useState(""); // yyyy-mm-dd (optional)
+  const [photoUrl, setPhotoUrl] = useState("");
+  const [stories, setStories] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
 
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
+    if (!name.trim() || !relation.trim()) {
+      setError("Name aur Relation zaroori hai.");
+      return;
+    }
 
-// Form validation schema
-const memberSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  birthYear: z.string().regex(/^\d{4}$/, "Enter a valid 4-digit year"),
-  deathYear: z.string().regex(/^\d{4}$/, "Enter a valid 4-digit year").optional().or(z.literal('')),
-  story: z.string().optional(),
-})
+    try {
+      setSaving(true);
 
-type MemberFormData = z.infer<typeof memberSchema>
+      // User-wise path, guest ke liye "public"
+      const uid = auth.currentUser?.uid ?? "public";
+      const membersRef = ref(db, `trees/${uid}/members`);
 
-interface AddMemberSheetProps {
-  isOpen: boolean
-  onOpenChange: (open: boolean) => void
-  onSave: (memberData: Omit<FamilyMember, 'imageHint' | 'parents' | 'spouseId' | 'imageUrl'> & {id: string}) => void
-  member: FamilyMember | null
-  members: FamilyMember[]
-  connection: { memberId: string, type: 'parent' | 'spouse' } | null
-}
+      await push(membersRef, {
+        name: name.trim(),
+        relation: relation.trim(),
+        dob: dob || null,
+        dod: dod || null,
+        photoUrl: photoUrl.trim() || null,
+        stories: stories.trim() || null,
+        createdAt: Date.now(),
+      });
 
-export function AddMemberSheet({ 
-  isOpen, 
-  onOpenChange, 
-  onSave,
-  member,
-}: AddMemberSheetProps) {
-  const form = useForm<MemberFormData>({
-    resolver: zodResolver(memberSchema),
-    defaultValues: {
-      name: member?.name || "",
-      birthYear: member?.birthYear || "",
-      deathYear: member?.deathYear || "",
-      story: member?.story || "",
-    },
-  })
-
-  React.useEffect(() => {
-    form.reset({
-      name: member?.name || "",
-      birthYear: member?.birthYear || "",
-      deathYear: member?.deathYear || "",
-      story: member?.story || "",
-    });
-  }, [member, form]);
-
-  const onSubmit = (data: MemberFormData) => {
-    const memberId = member ? member.id : Date.now().toString();
-    onSave({
-      id: memberId,
-      ...data,
-      deathYear: data.deathYear || undefined,
-    })
-    form.reset()
-    onOpenChange(false)
-  }
-  
-  const title = member ? "Edit Member" : "Add New Member";
-  const description = member ? "Update the details of this family member." : "Add a new person to your family tree.";
+      // Success
+      setName("");
+      setRelation("");
+      setDob("");
+      setDod("");
+      setPhotoUrl("");
+      setStories("");
+      onClose(); // modal band
+      alert("Member added ✅");
+    } catch (err: any) {
+      console.error(err);
+      setError("Save karte waqt error aayi. Thoda baad try karein.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
-    <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>{title}</SheetTitle>
-          <SheetDescription>
-            {description}
-          </SheetDescription>
-        </SheetHeader>
-        
-        <Form {...form}>
-          <form 
-            onSubmit={form.handleSubmit(onSubmit)} 
-            className="flex h-full flex-col space-y-6 pt-6"
-          >
-            <div className="flex-1 space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Full Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter full name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+    <form onSubmit={handleSubmit} className="space-y-4 text-white">
+      <h2 className="text-xl font-semibold text-yellow-400">Add Family Member</h2>
 
-              <div className="flex gap-4">
-                <FormField
-                  control={form.control}
-                  name="birthYear"
-                  render={({ field }) => (
-                    <FormItem className="flex-1">
-                      <FormLabel>Birth Year</FormLabel>
-                      <FormControl>
-                        <Input placeholder="YYYY" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="deathYear"
-                  render={({ field }) => (
-                    <FormItem className="flex-1">
-                      <FormLabel>Death Year (Optional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="YYYY" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+      {error ? (
+        <div className="rounded bg-red-600/80 px-3 py-2 text-sm">{error}</div>
+      ) : null}
 
-              <FormField
-                control={form.control}
-                name="story"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Life Story</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Share a brief story about their life..."
-                        className="resize-none"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+      {/* Name */}
+      <div>
+        <label className="mb-1 block text-sm text-gray-300">Name</label>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Member name"
+          className="w-full rounded border border-gray-600 bg-gray-800 px-3 py-2 text-white placeholder-gray-400 outline-none focus:border-yellow-500"
+          required
+        />
+      </div>
 
-            <SheetFooter className="pt-6">
-              <div className="flex gap-3 w-full">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => onOpenChange(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" className="flex-1">
-                  Save Changes
-                </Button>
-              </div>
-            </SheetFooter>
-          </form>
-        </Form>
-      </SheetContent>
-    </Sheet>
-  )
+      {/* Relation */}
+      <div>
+        <label className="mb-1 block text-sm text-gray-300">Relation</label>
+        <input
+          type="text"
+          value={relation}
+          onChange={(e) => setRelation(e.target.value)}
+          placeholder="Father, Mother, Brother..."
+          className="w-full rounded border border-gray-600 bg-gray-800 px-3 py-2 text-white placeholder-gray-400 outline-none focus:border-yellow-500"
+          required
+        />
+      </div>
+
+      {/* Dates */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <label className="mb-1 block text-sm text-gray-300">Date of Birth</label>
+          <input
+            type="date"
+            value={dob}
+            onChange={(e) => setDob(e.target.value)}
+            className="w-full rounded border border-gray-600 bg-gray-800 px-3 py-2 text-white outline-none focus:border-yellow-500"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm text-gray-300">
+            Date of Death (Optional)
+          </label>
+          <input
+            type="date"
+            value={dod}
+            onChange={(e) => setDod(e.target.value)}
+            className="w-full rounded border border-gray-600 bg-gray-800 px-3 py-2 text-white outline-none focus:border-yellow-500"
+          />
+        </div>
+      </div>
+
+      {/* Photo URL */}
+      <div>
+        <label className="mb-1 block text-sm text-gray-300">Photo URL (optional)</label>
+        <input
+          type="url"
+          value={photoUrl}
+          onChange={(e) => setPhotoUrl(e.target.value)}
+          placeholder="https://example.com/photo.jpg"
+          className="w-full rounded border border-gray-600 bg-gray-800 px-3 py-2 text-white placeholder-gray-400 outline-none focus:border-yellow-500"
+        />
+      </div>
+
+      {/* Stories */}
+      <div>
+        <label className="mb-1 block text-sm text-gray-300">Stories / Memories</label>
+        <textarea
+          rows={4}
+          value={stories}
+          onChange={(e) => setStories(e.target.value)}
+          placeholder="Write a short memory or story..."
+          className="w-full rounded border border-gray-600 bg-gray-800 px-3 py-2 text-white placeholder-gray-400 outline-none focus:border-yellow-500"
+        />
+      </div>
+
+      {/* Actions */}
+      <div className="mt-4 flex items-center gap-3">
+        <button
+          type="submit"
+          disabled={saving}
+          className="rounded bg-yellow-500 px-4 py-2 font-semibold text-black hover:bg-yellow-400 disabled:opacity-60"
+        >
+          {saving ? "Saving..." : "Add Member"}
+        </button>
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded bg-gray-600 px-4 py-2 text-white hover:bg-gray-500"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
 }
