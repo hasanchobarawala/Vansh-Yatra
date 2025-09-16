@@ -4,10 +4,10 @@ import AuthForm from "@/components/ui/AuthForm";
 
 export default function HomePage() {
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-gray-900 text-white px-6 pt-8">
-      {/* Top row: Left = Title+Desc, Right = Login (यहीं तक grid) */}
-      <div className="mx-auto w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-        {/* Left: Vansh Yatra + description (top-left) */}
+    <div className="min-h-[calc(100vh-4rem)] bg-gray-900 text-white px-6 pt-6">
+      {/* Top row: Left = Title+Desc, Right = Login */}
+      <div className="mx-auto w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+        {/* Left: Vansh Yatra + description */}
         <div className="space-y-3">
           <h1 className="text-4xl font-bold text-yellow-400">Vansh Yatra</h1>
           <p className="text-gray-300 text-justify leading-relaxed">
@@ -18,7 +18,7 @@ export default function HomePage() {
           </p>
         </div>
 
-        {/* Right: Login (top-right) */}
+        {/* Right: Login */}
         <div className="flex md:justify-end">
           <div className="w-full max-w-sm rounded-lg shadow-lg border border-yellow-600 bg-yellow-500/95 p-5">
             <AuthForm />
@@ -26,15 +26,12 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Image: grid ke bahar, full container ke andar LEFT aligned
-         - ab left column ki width se bound nahi rahegi
-         - width ko freely control kar sakte हैं
-      */}
-      <div className="mx-auto w-full max-w-6xl mt-4">
+      {/* Image: grid ke BAHAAR, LEFT aligned, fixed width, height constrained */}
+      <div className="mx-auto w-full max-w-6xl mt-3">
         <img
           src="/family-tree.png"
           alt="Family Tree"
-          className="max-w-[50rem] max-h-[60vh] object-contain rounded-lg shadow-lg"
+          className="w-[44rem] max-w-full max-h-[52vh] object-contain rounded-lg shadow-lg"
         />
       </div>
     </div>
