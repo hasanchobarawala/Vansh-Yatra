@@ -1,23 +1,36 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { onAuthStateChanged, User } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+
+import AuthStatus from "@/components/AuthStatus";
+import AuthForm from "@/components/ui/AuthForm";
 import FamilyTreeContainer from "@/components/app/FamilyTreeContainer";
 
 export default function TreePage() {
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, setUser);
+    return () => unsub();
+  }, []);
+
   return (
-    <main className="min-h-screen bg-black text-white px-4 py-8">
-      <div className="mx-auto max-w-5xl">
-        <h1 className="text-center text-4xl font-extrabold text-yellow-500">
-          आपका Family Tree
-        </h1>
-        <p className="mt-2 text-center text-gray-300">
-          यहाँ आप अपने परिवार के सदस्यों को जोड़ और देख सकते हैं।
-        </p>
+    <main className="min-h-screen bg-black text-white">
+      {/* top bar */}
+      <div className="w-full max-w-6xl mx-auto px-4 flex items-center justify-end py-4">
+        <AuthStatus />
+      </div>
 
-        <div className="mt-8">
+      <div className="w-full max-w-5xl mx-auto px-4 pb-20">
+        {!user ? (
+          <div className="max-w-md mx-auto bg-white/5 backdrop-blur rounded-xl p-6 border border-white/10">
+            <AuthForm />
+          </div>
+        ) : (
           <FamilyTreeContainer />
-        </div>
-
-        <footer className="mt-16 text-center text-sm text-gray-400">
-          App Developed by Hasan Chobarawala · +91-9926652153
-        </footer>
+        )}
       </div>
     </main>
   );
