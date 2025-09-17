@@ -5,9 +5,10 @@ import AuthForm from "@/components/ui/AuthForm";
 export default function HomePage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-gray-900 text-white px-6 pt-6">
-      {/* Top row: Left = Title+Desc, Right = Login */}
+      {/* Top row: Left = Title+Desc+Image, Right = Login */}
       <div className="mx-auto w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-        {/* Left: Vansh Yatra + description */}
+        
+        {/* Left: Vansh Yatra + description + image */}
         <div className="space-y-3">
           <h1 className="text-4xl font-bold text-yellow-400">Vansh Yatra</h1>
           <p className="text-gray-300 text-justify leading-relaxed">
@@ -16,6 +17,13 @@ export default function HomePage() {
             परिवार वृक्ष (फैमिली ट्री) के रूप में सभी रिश्तों को सहज रूप से देखा जा सकता है।
             यह ऐप परिवार को जोड़ने, विरासत को संजोने और आने वाली पीढ़ियों को अपनी जड़ों से जोड़ने का माध्यम है।
           </p>
+
+          {/* Image exactly as wide as description block */}
+          <img
+            src="/family-tree.png"
+            alt="Family Tree"
+            className="h-[60vh] w-full object-contain rounded-lg shadow-lg"
+          />
         </div>
 
         {/* Right: Login */}
@@ -24,15 +32,6 @@ export default function HomePage() {
             <AuthForm />
           </div>
         </div>
-      </div>
-
-      {/* Image: grid ke BAHAAR, LEFT aligned, fixed width, height constrained */}
-      <div className="mx-auto w-full max-w-6xl mt-3">
-        <img
-          src="/family-tree.png"
-          alt="Family Tree"
-          className="w-[44rem] max-w-full max-h-[52vh] object-contain rounded-lg shadow-lg"
-        />
       </div>
     </div>
   );
