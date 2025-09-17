@@ -11,22 +11,19 @@ import {
   limit,
 } from "firebase/firestore";
 
-/**
- * Minimal member shape we expect. Your actual docs can have more fields.
- * This code tries to be defensive: if fields missing, we fallback nicely.
- */
 type Member = {
   id: string;
   name?: string;
   gender?: "male" | "female" | "other";
   spouseId?: string | null;
-  parentIds?: string[]; // optional: if you have it
+  parentIds?: string[];
   createdAt?: any;
 };
 
 export default function FamilyTreeView() {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sourceInfo, setSourceInfo] = useState<string>("");
 
   useEffect(() => {
     const u = auth.currentUser;
@@ -35,32 +32,61 @@ export default function FamilyTreeView() {
       return;
     }
 
-    // NOTE: update "members" collection name if your app uses a different one.
-    // We fetch only documents created by the current user (ownerId = uid).
     const run = async () => {
       try {
-        const q = query(
-          collection(db, "members"),
-          where("ownerId", "==", u.uid),
-          orderBy("createdAt", "desc"),
-          limit(100)
-        );
-        const snap = await getDocs(q);
-        const data: Member[] = snap.docs.map((d) => {
-          const x = d.data() as any;
-          return {
-            id: d.id,
-            name: (x.name || x.fullName || "").trim(),
-            gender: x.gender || undefined,
-            spouseId: x.spouseId ?? null,
-            parentIds: Array.isArray(x.parentIds) ? x.parentIds : undefined,
-            createdAt: x.createdAt,
-          };
-        });
-        setMembers(data);
-      } catch (e) {
-        console.error("FamilyTreeView fetch error:", e);
+        // --- Try 1: top-level "members" with ownerId == uid ---
+        let got: Member[] = [];
+        try {
+          const q1 = query(
+            collection(db, "members"),
+            where("ownerId", "==", u.uid),
+            orderBy("createdAt", "desc"),
+            limit(200)
+          );
+          const s1 = await getDocs(q1);
+          got = s1.docs.map((d) => toMember(d.id, d.data() as any));
+          if (got.length) {
+            setMembers(got);
+            setSourceInfo(`source: top-level "members" (ownerId=${u.uid}) count=${got.length}`);
+            return;
+          }
+        } catch (e) {
+          // ignore and fall through
+          console.warn("Top-level members fetch failed (ok to ignore):", e);
+        }
+
+        // --- Try 2: subcollection "users/{uid}/members" ---
+        try {
+          const subRef = collection(db, "users", u.uid, "members");
+          const q2 = query(subRef, orderBy("createdAt", "desc"), limit(200));
+          const s2 = await getDocs(q2);
+          const got2 = s2.docs.map((d) => toMember(d.id, d.data() as any));
+          if (got2.length) {
+            setMembers(got2);
+            setSourceInfo(`source: users/${u.uid}/members count=${got2.length}`);
+            return;
+          }
+        } catch (e) {
+          console.warn("Subcollection members fetch failed (ok to ignore):", e);
+        }
+
+        // --- Try 3: last resort — top-level "members" without ownerId filter (NOT recommended for prod) ---
+        try {
+          const q3 = query(collection(db, "members"), orderBy("createdAt", "desc"), limit(200));
+          const s3 = await getDocs(q3);
+          const got3 = s3.docs.map((d) => toMember(d.id, d.data() as any));
+          if (got3.length) {
+            setMembers(got3);
+            setSourceInfo(`source: top-level "members" (no filter) count=${got3.length}`);
+            return;
+          }
+        } catch (e) {
+          console.warn("Unfiltered top-level fetch failed:", e);
+        }
+
+        // Nothing found:
         setMembers([]);
+        setSourceInfo("no members found in: members(ownerId), users/{uid}/members, members(all)");
       } finally {
         setLoading(false);
       }
@@ -69,15 +95,15 @@ export default function FamilyTreeView() {
     run();
   }, []);
 
-  // --- Heuristic pairing & children bucketing ---
   const { coupleA, coupleB, children } = useMemo(() => {
-    if (!members.length) return { coupleA: null as Member | null, coupleB: null as Member | null, children: [] as Member[] };
-
-    // 1) Try to find two members who reference each other via spouseId
+    if (!members.length) {
+      return { coupleA: null as Member | null, coupleB: null as Member | null, children: [] as Member[] };
+    }
     const byId = new Map(members.map((m) => [m.id, m]));
     let A: Member | null = null;
     let B: Member | null = null;
 
+    // mutual spouseId
     for (const m of members) {
       if (m.spouseId && byId.get(m.spouseId)?.spouseId === m.id) {
         A = m;
@@ -86,15 +112,11 @@ export default function FamilyTreeView() {
       }
     }
 
-    // 2) Fallback: take top 2 recent members as a couple
     if (!A || !B) {
       A = members[0] || null;
       B = members[1] || null;
     }
 
-    // 3) Children filter:
-    // If your docs have parentIds, take children whose parentIds include A/B
-    // Else fallback: remaining members except A/B
     let kids: Member[] = [];
     if (A && B) {
       const coupleIds = new Set([A.id, B.id]);
@@ -105,12 +127,9 @@ export default function FamilyTreeView() {
           Array.isArray(m.parentIds) &&
           m.parentIds.some((pid) => coupleIds.has(pid))
       );
-      if (withParents.length) {
-        kids = withParents;
-      } else {
-        // simple fallback: remaining members (best-effort)
-        kids = members.filter((m) => m.id !== A!.id && m.id !== B!.id);
-      }
+      kids = withParents.length
+        ? withParents
+        : members.filter((m) => m.id !== A!.id && m.id !== B!.id);
     }
 
     return { coupleA: A, coupleB: B, children: kids };
@@ -129,12 +148,16 @@ export default function FamilyTreeView() {
       <div className="rounded-lg border border-yellow-700/40 bg-yellow-50/5 p-6 text-sm text-neutral-300">
         अभी आपने कोई सदस्य नहीं जोड़ा है। पहले कुछ members जोड़ें — फिर यह section automatically
         husband–wife–children layout दिखा देगा.
+        <div className="mt-2 text-xs text-neutral-400">{sourceInfo}</div>
       </div>
     );
   }
 
   return (
     <div className="p-6 rounded-xl border border-yellow-700/40 bg-yellow-50/5">
+      {/* debug source (optional) */}
+      <div className="text-xs text-neutral-400 mb-2">{sourceInfo}</div>
+
       {/* Parents row */}
       <div className="flex justify-center items-center gap-6">
         <MemberBox member={coupleA} fallback="Member 1" />
@@ -159,6 +182,17 @@ export default function FamilyTreeView() {
       )}
     </div>
   );
+}
+
+function toMember(id: string, x: any): Member {
+  return {
+    id,
+    name: (x?.name || x?.fullName || "").trim(),
+    gender: x?.gender || undefined,
+    spouseId: x?.spouseId ?? null,
+    parentIds: Array.isArray(x?.parentIds) ? x.parentIds : undefined,
+    createdAt: x?.createdAt,
+  };
 }
 
 function MemberBox({
