@@ -7,7 +7,6 @@ import FamilyTreeContainer from "@/components/app/FamilyTreeContainer";
 import AuthForm from "@/components/ui/AuthForm";
 import FamilyTreeView from "@/components/app/FamilyTreeView";
 
-
 export default function TreePage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,6 +42,14 @@ export default function TreePage() {
     );
   }
 
-  // Logged in → show the realtime tree UI
-  return <FamilyTreeContainer />;
+  // Logged in → show the new demo layout + your existing realtime UI
+  return (
+    <div className="p-6 space-y-8">
+      {/* 🔹 Demo: Husband–Wife–Children layout */}
+      <FamilyTreeView />
+
+      {/* 🔹 Your existing realtime members UI */}
+      <FamilyTreeContainer />
+    </div>
+  );
 }
