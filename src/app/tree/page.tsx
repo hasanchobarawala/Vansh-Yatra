@@ -5,6 +5,8 @@ import { onAuthStateChanged, User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import FamilyTreeContainer from "@/components/app/FamilyTreeContainer";
 import AuthForm from "@/components/ui/AuthForm";
+import FamilyTreeView from "@/components/app/FamilyTreeView";
+
 
 export default function TreePage() {
   const [user, setUser] = useState<User | null>(null);
