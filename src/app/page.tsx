@@ -5,10 +5,9 @@ import AuthForm from "@/components/ui/AuthForm";
 export default function HomePage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-gray-900 text-white px-6 pt-6">
-      {/* Top row: Left = Title+Desc+Image, Right = Login */}
+      {/* Top row: Left = Title+Desc, Right = Login */}
       <div className="mx-auto w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-        
-        {/* Left: Vansh Yatra + description + image */}
+        {/* Left: Vansh Yatra + description */}
         <div className="space-y-3">
           <h1 className="text-4xl font-bold text-yellow-400">Vansh Yatra</h1>
           <p className="text-gray-300 text-justify leading-relaxed">
@@ -18,12 +17,14 @@ export default function HomePage() {
             यह ऐप परिवार को जोड़ने, विरासत को संजोने और आने वाली पीढ़ियों को अपनी जड़ों से जोड़ने का माध्यम है।
           </p>
 
-          {/* Image exactly as wide as description block */}
-          <img
-            src="/family-tree.png"
-            alt="Family Tree"
-            className="h-[60vh] w-full object-contain rounded-lg shadow-lg"
-          />
+          {/* IMAGE: left aligned, fixed width (tune w-[48rem] as needed), fixed height 60vh */}
+          <div className="flex justify-start">
+            <img
+              src="/family-tree.png"
+              alt="Family Tree"
+              className="h-[60vh] w-[48rem] max-w-full object-contain rounded-lg shadow-lg"
+            />
+          </div>
         </div>
 
         {/* Right: Login */}
