@@ -5,24 +5,14 @@ import AuthForm from "@/components/ui/AuthForm";
 export default function HomePage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-gray-900 text-white px-6 pt-6">
-      {/* Top row: Left = Title + Image + Caption + Description, Right = Login */}
       <div className="mx-auto w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
         {/* LEFT */}
-        <div className="space-y-3">
+        <div className="space-y-4">
           {/* Heading */}
-          <h1 className="text-4xl font-bold text-yellow-400">VANSH YATRA</h1>
+          <h1 className="text-4xl font-bold text-yellow-400">Vansh Yatra</h1>
 
-          {/* Image (heading ke neeche, left aligned; width ko as-is chhod rahe hain) */}
-          <div className="mt-2 flex justify-start">
-            <img
-              src="/family-tree.png"
-              alt="Family Tree"
-              className="h-[60vh] w-auto max-w-full object-contain rounded-lg shadow-lg"
-            />
-          </div>
-
-          {/* Caption (description se bada aur colored) */}
-          <p className="mt-1 text-2xl font-semibold text-yellow-300">
+          {/* Caption */}
+          <p className="text-2xl font-semibold text-yellow-300">
             जानो अपनी जड़ें, पहचानो अपना वंश
           </p>
 
@@ -33,6 +23,15 @@ export default function HomePage() {
             परिवार वृक्ष (फैमिली ट्री) के रूप में सभी रिश्तों को सहज रूप से देखा जा सकता है।
             यह ऐप परिवार को जोड़ने, विरासत को संजोने और आने वाली पीढ़ियों को अपनी जड़ों से जोड़ने का माध्यम है।
           </p>
+
+          {/* Image (सबसे last) */}
+          <div className="mt-2 flex justify-start">
+            <img
+              src="/family-tree.png"
+              alt="Family Tree"
+              className="h-[60vh] w-auto max-w-full object-contain rounded-lg shadow-lg"
+            />
+          </div>
         </div>
 
         {/* RIGHT: Login */}
