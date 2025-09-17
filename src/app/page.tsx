@@ -13,7 +13,7 @@ export default function HomePage() {
       <div className="mx-auto w-full max-w-7xl grid grid-cols-1 md:grid-cols-[52rem_minmax(18rem,1fr)] gap-6 items-start">
         {/* LEFT: title + desc (narrower) + image (wider) */}
         <div className="space-y-3">
-          <h1 className="text-4xl font-bold text-yellow-400">Vansh Yatra</h1>
+          <h1 className="text-4xl font-bold text-yellow-400">VANSH YATRA</h1>
 
           {/* Text container kept narrower so paragraph width doesn't grow */}
           <div className="max-w-[44rem]">
